@@ -33,6 +33,8 @@ Partial Class Form1
         '
         'UcComboboxAutoComplete1
         '
+        Me.UcComboboxAutoComplete1.AllowForItemsOnly = False
+        Me.UcComboboxAutoComplete1.AllowUserToAdd = False
         Me.UcComboboxAutoComplete1.EditingControlDataGridView = Nothing
         Me.UcComboboxAutoComplete1.EditingControlFormattedValue = ""
         Me.UcComboboxAutoComplete1.EditingControlRowIndex = 0
@@ -80,6 +82,8 @@ Partial Class Form1
         '
         'Column1
         '
+        Me.Column1.AllowUserToAdd = False
+        Me.Column1.AllowForItemsOnly = False
         Me.Column1.DisplayStyle = System.Windows.Forms.DataGridViewComboBoxDisplayStyle.ComboBox
         Me.Column1.DropDownWidth = 160
         Me.Column1.FlatStyle = System.Windows.Forms.FlatStyle.Flat

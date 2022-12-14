@@ -28,7 +28,9 @@
 
             If ucColumn IsNot Nothing Then
                 ctl.BeginUpdate()
-                ctl.AllowForItemsOnly = True
+                ctl.AllowForItemsOnly = ucColumn.AllowForItemsOnly
+                ctl.AllowUserToAdd = ucColumn.AllowUserToAdd
+
                 ctl.DropDownStyle = ComboBoxStyle.DropDown
                 ctl.synonymMode_SetMode()
                 For Each val As String In ucColumn.Items

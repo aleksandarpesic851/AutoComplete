@@ -1,5 +1,14 @@
-﻿Public Class ucComboboxAutoCompleteColumn
+﻿Imports System.ComponentModel
+Imports System.Drawing.Design
+
+Public Class ucComboboxAutoCompleteColumn
     Inherits DataGridViewComboBoxColumn
+
+    <DefaultValue(True)>
+    Public Property AllowForItemsOnly As Boolean
+
+    <DefaultValue(True)>
+    Public Property AllowUserToAdd As Boolean
     Public Overrides Property CellTemplate As DataGridViewCell
         Get
             Return MyBase.CellTemplate

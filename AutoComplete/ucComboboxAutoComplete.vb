@@ -178,8 +178,28 @@ Public Class ucComboboxAutoComplete
 
     Protected Overrides Sub OnLostFocus(ByVal e As EventArgs)
         If Not m_dropDown.Focused AndAlso Not m_suggestionList.Focused Then
-            If m_suggestionList.Items.Count < 1 + DefaultItemCount() And AllowForItemsOnly Then
-                Text = ""
+            If m_suggestionList.Items.Count < 1 + DefaultItemCount() Then
+                If AllowForItemsOnly Then
+                    Dim dataGridView As DataGridView = CType(Me, IDataGridViewEditingControl).EditingControlDataGridView
+                    If dataGridView IsNot Nothing Then
+                        Dim defaultVal As String = synonymMode_ActualText(0)
+                        dataGridView.CurrentCell.Value = defaultVal
+                        Me.Text = defaultVal
+                    Else
+                        Text = ""
+                    End If
+                Else
+                    Dim dataGridView As DataGridView = CType(Me, IDataGridViewEditingControl).EditingControlDataGridView
+                    If dataGridView IsNot Nothing Then
+                        Dim idx As Integer = dataGridView.CurrentCell.ColumnIndex
+                        Dim column As DataGridViewComboBoxColumn = dataGridView.Columns(idx)
+                        column.Items.Add(Text)
+                        dataGridView.CurrentCell.Value = Text
+                        synonymMode_AddItem(Text, Text, "")
+                        Me.Text = Text
+                        UpdateDropdownList()
+                    End If
+                End If
             End If
             hideDropDown()
         End If
