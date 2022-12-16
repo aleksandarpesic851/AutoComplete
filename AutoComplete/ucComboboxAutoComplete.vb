@@ -20,17 +20,6 @@ Public Class ucComboboxAutoComplete
     Private _bAllowForItemsOnly As Boolean = True
     Private _bAllowUserToAdd As Boolean = True
 
-    Public Overrides Property SelectedIndex As Integer
-        Get
-            Return Math.Max(m_suggestionList.SelectedIndex - DefaultItemCount(), -1)
-        End Get
-        Set(value As Integer)
-            If (value < m_suggestionList.Items.Count - DefaultItemCount()) Then
-                m_suggestionList.SelectedIndex = value + DefaultItemCount()
-            End If
-        End Set
-    End Property
-
     <Browsable(True), EditorBrowsable(EditorBrowsableState.Always)>
     Public Event ItemFromSuggestionListSelected As EventHandler
     <Browsable(True), EditorBrowsable(EditorBrowsableState.Always)>
@@ -45,7 +34,7 @@ Public Class ucComboboxAutoComplete
         m_matchingMethod = ucComboboxAutoComplete_StringMatchingMethod.NoWildcards
         DropDownStyle = ComboBoxStyle.DropDown
         AutoCompleteMode = AutoCompleteMode.None
-
+        DropDownHeight = 1
         m_suggestionList = New ListBox With {
                 .DisplayMember = "Text",
                 .TabStop = False,
@@ -62,6 +51,8 @@ Public Class ucComboboxAutoComplete
 
         m_dropDown = New ucComboboxAutoComplete_DropDownControl(m_suggestionList)
         onFontChanged2(Nothing, Nothing)
+
+        Me.Items.Add("")
     End Sub
 
     Protected Overrides Sub Dispose(ByVal disposing As Boolean)
@@ -129,19 +120,8 @@ Public Class ucComboboxAutoComplete
         End If
         UpdateDropdownList()
 
-        'If MyBase.DroppedDown Then
-        'BeginUpdate()
-        'Dim oText As String = Text
-        'Dim selStart As Integer = SelectionStart
-        'Dim selLen As Integer = SelectionLength
-        ''MyBase.DroppedDown = False
-        'Text = showActualText(oText)
-        'If _bSelectAllow Then [Select](selStart, selLen)
-        'EndUpdate()
-        'End If
-
         Dim h As Integer = Math.Min(MaxDropDownItems, m_suggestionList.Items.Count) * m_suggestionList.ItemHeight
-        m_dropDown.Show(Me, New Size(DropDownWidth, h))
+        m_dropDown.Show(Me, New Size(Width, h))
 
         If m_timerAutoFocus Is Nothing Then
             m_timerAutoFocus = New Timer()
@@ -182,22 +162,22 @@ Public Class ucComboboxAutoComplete
                 If AllowForItemsOnly Then
                     Dim dataGridView As DataGridView = CType(Me, IDataGridViewEditingControl).EditingControlDataGridView
                     If dataGridView IsNot Nothing Then
-                        Dim defaultVal As String = synonymMode_ActualText(0)
-                        dataGridView.CurrentCell.Value = defaultVal
-                        Me.Text = defaultVal
+                        dataGridView.CurrentCell.Value = ""
+                        Me.Text = ""
                     Else
                         Text = ""
                     End If
                 Else
                     Dim dataGridView As DataGridView = CType(Me, IDataGridViewEditingControl).EditingControlDataGridView
                     If dataGridView IsNot Nothing Then
-                        Dim idx As Integer = dataGridView.CurrentCell.ColumnIndex
-                        Dim column As DataGridViewComboBoxColumn = dataGridView.Columns(idx)
-                        column.Items.Add(Text)
-                        dataGridView.CurrentCell.Value = Text
-                        synonymMode_AddItem(Text, Text, "")
-                        Me.Text = Text
-                        UpdateDropdownList()
+                        Dim cell As ucComboboxAutoCompleteCell = CType(dataGridView.CurrentCell, ucComboboxAutoCompleteCell)
+                        If cell IsNot Nothing Then
+                            cell.SetData(Text, Text, "")
+                            cell.Value = Text
+                            synonymMode_AddItem(Text, Text, "")
+                            Me.Text = Text
+                            UpdateDropdownList()
+                        End If
                     End If
                 End If
             End If
@@ -306,30 +286,33 @@ Public Class ucComboboxAutoComplete
                     tag = ctrl.Text
             End Select
         Next
+        mAddValueDlg.Close()
 
         Dim dataGridView As DataGridView = CType(Me, IDataGridViewEditingControl).EditingControlDataGridView
         If dataGridView IsNot Nothing Then
-            Dim idx As Integer = dataGridView.CurrentCell.ColumnIndex
-            Dim column As DataGridViewComboBoxColumn = dataGridView.Columns(idx)
-            column.Items.Add(val)
-            dataGridView.CurrentCell.Value = val
+            CType(dataGridView.CurrentCell, ucComboboxAutoCompleteCell).SetData(val, id, "")
         End If
 
         synonymMode_AddItem(val, id, "")
         Me.Text = val
         UpdateDropdownList()
-        mAddValueDlg.Close()
         'Focus()
         RaiseEvent NewItemAdded(val, tag, Me)
     End Sub
     Private Sub ConfirmSuggestion(ByVal sender As Object, ByVal e As EventArgs)
         If m_suggestionList.SelectedIndex < 0 Then
+            If Me.Text = "" Then
+                Dim dataGridView As DataGridView = CType(Me, IDataGridViewEditingControl).EditingControlDataGridView
+                If dataGridView IsNot Nothing Then
+                    dataGridView.CurrentCell.Value = ""
+                    Me.Text = ""
+                End If
+            End If
             Return
         End If
         Dim sel As StringMatch = CType(m_suggestionList.Items(m_suggestionList.SelectedIndex), StringMatch)
 
         If AllowUserToAdd And sel.AppendOption Then
-            'MessageBox.Show("Add new item")
         Else
             If m_suggestionList.Items.Count < 1 + DefaultItemCount() Then
                 Return
@@ -486,18 +469,6 @@ Public Class ucComboboxAutoComplete
             Return
         End If
         showDropDown()
-        'Dim visible As Boolean = m_suggestionList.Items.Count <> 0
-
-        'If m_suggestionList.Items.Count = 1 + DefaultItemCount() AndAlso (CType(m_suggestionList.Items(0), StringMatch)).Text.Length = Text.Trim().Length Then
-        '    visible = False
-        'End If
-
-        'If visible Then
-        '    showDropDown()
-        'Else
-        '    hideDropDown()
-        'End If
-
         m_fromKeyboard = False
     End Sub
 
@@ -654,12 +625,8 @@ Public Class ucComboboxAutoComplete
 
         Set(ByVal value As Object)
             Try
-                ' This will throw an exception of the string is 
-                ' null, empty, or not in the format of a date.
                 Me.Text = CStr(value)
             Catch
-                ' In the case of an exception, just use the default
-                ' value so we're not left with a null value.
                 Me.Text = ""
             End Try
         End Set
@@ -700,11 +667,7 @@ Public Class ucComboboxAutoComplete
     Private Sub InitializeComponent()
         Me.components = New System.ComponentModel.Container()
         Me.SuspendLayout()
-        '
-        'ucComboboxAutoComplete
-        '
         Me.ResumeLayout(False)
-
     End Sub
 
     Public Function synonymMode_getID() As String
@@ -771,6 +734,7 @@ Public Class ucComboboxAutoComplete
         synonymMode_DropDownDisplay.Clear()
         synonymMode_TextID.Clear()
         Me.Items.Clear()
+        Me.Items.Add("")
     End Sub
     Public Sub synonymMode_AddItem(ByRef sActualText As String, Optional sID As String = "", Optional sSynonymList As String = "")
 
@@ -814,15 +778,12 @@ Public Class ucComboboxAutoComplete
     Public Function showActualText(ByRef sInputString As String) As String
 
         Dim sActualText As String = sInputString
-        'Dim nItemCount = Me.Items.Count - DefaultItemCount()
 
         If synonymMode Then
-            'If nItemCount = synonymMode_DropDownDisplay.Count And nItemCount = synonymMode_ActualText.Count Then
             Dim iINDEX As Integer = synonymMode_DropDownDisplay.IndexOf(sInputString)
             If iINDEX <> -1 Then
                 sActualText = synonymMode_ActualText(iINDEX)
             End If
-            'End If
         End If
 
         Return sActualText
